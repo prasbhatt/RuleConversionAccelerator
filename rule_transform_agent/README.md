@@ -12,7 +12,10 @@ test suite and requires no OpenAI credits and no AWS account to try:
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate        # on Windows: .venv\Scripts\activate
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
+# macOS/Linux:
+source .venv/bin/activate
 pip install -r requirements.txt
 pytest -q
 ```
@@ -33,32 +36,38 @@ interpreter.
 
 ## What needs your OpenAI key and dataset to run
 
-1. Copy `.env.example` to `.env` and fill in your `OPENAI_API_KEY`.
-2. Put your ground-truth Excel workbook (the "Synthetic Rules" sheet built
-   during the data-preparation phase) at the path referenced by
-   `GROUND_TRUTH_XLSX` in `.env` (defaults to `./data/`).
+1. Create a `.env` file in the project root and set your API key and workbook
+    path. For the workbook currently in `data/`, use:
+
+    ```dotenv
+    OPENAI_API_KEY=your_openai_api_key
+    GROUND_TRUTH_XLSX=./data/Anonymised_Executable_Rule_Ground_Truth_Dataset 5.xlsx
+    ```
+
+    `.env` is excluded from Git; do not commit API keys.
+2. The ground-truth workbook must contain the `Synthetic Rules` sheet. If you
+    use a different workbook, set `GROUND_TRUTH_XLSX` to its path instead.
 3. Build the local vector index (one-time, or whenever the dataset changes):
 
-   ```bash
-   python -m src.cli build-index
-   ```
+    ```powershell
+    python -m src.cli build-index
+    ```
 
 4. Convert a brand-new source rule you have never shown the model before:
 
-   ```bash
-   python -m src.cli convert \
-       --rule-file path/to/new_rule_definition.txt \
-       --name "Org_PIM_99999_Some_New_Rule" \
-       --target-attribute "Bullet Point 05" \
-       --target-locale "en_GB"
-   ```
+    ```powershell
+    python -m src.cli convert --rule-file ".\rule.txt" --name "Org_PIM_99999_Some_New_Rule" --target-attribute "Bullet Point 05" --target-locale "en_GB" > ".\converted_rule.json"
+    ```
 
+    Replace `rule.txt` with the path to a text file containing the source rule.
+    The converted JSON is written to `converted_rule.json`; status messages
+    remain in the terminal.
 5. Once you are happy with prompt/retrieval tuning (done by hand, or against
-   the Validation split), run the held-out evaluation:
+    the Validation split), run the held-out evaluation:
 
-   ```bash
-   python -m src.cli evaluate
-   ```
+    ```powershell
+    python -m src.cli evaluate
+    ```
 
    This prints `schema_valid_rate`, `variable_safety_rate` and
    `functional_match_rate` computed over the untouched Test split — the

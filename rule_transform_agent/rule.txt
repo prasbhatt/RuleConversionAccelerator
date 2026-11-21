@@ -1,0 +1,26 @@
+"~Rule should trigger if product invoked to amend workflow. Tried using workflow events, but also trying this~
+InvokeAmendValue:=IIF[ValidateEmptyAttributes[""Invoke Amend"",IGNORESOURCEFLAG],"""",AttributeValue[""Invoke Amend""]];
+
+~Get the value of the attribute 'Data Acquisition Vendor'~
+DataAcquisitionVendorValue:=IIF[ValidateAttributesExists[""Data Acquisition Vendor""],IIF[ValidateEmptyAttributes[""Data Acquisition Vendor"",IGNORESOURCEFLAG],"""",AttributeValue[""Data Acquisition Vendor""]],""""];
+
+~Get the ID of the Vendor from the vw_Vendors view~
+VendorNameID:=GetLookupCellValue[""vw_Vendors"",""Id"",Concat[""ParentVendorName [EqualTo] "",DataAcquisitionVendorValue]];
+
+~Find the vendor capability rating from the reference table, using the VendorNameID (since the VendorCapabilityRating reference table has validation on fields, it shows the Vendor name, but returns the ID when queried)~
+VendorRating:=GetLookupCellValue[""Vendor_Capability_Rating"",""CapabilityRating"",Concat[""ParentVendorName [EqualTo] "",VendorNameID]];
+VendorTrained:=GetLookupCellValue[""Vendor_Capability_Rating"",""Trained"",Concat[""ParentVendorName [EqualTo] "",VendorNameID]];
+
+~VendorRating will currently be an ID of a value in the RatingOptions reference table. Convert this to the actual text value of the rating.~
+VendorRating:=IIF[VendorRating="""","""",GetLookupCellValue[""Vendor_Rating_Options"",""Rating"",Concat[""Id [EqualTo] "",VendorRating]]];
+VendorTrained:=IIF[VendorTrained="""","""",GetLookupCellValue[""Func_Yes"",""Value"",Concat[""Id [EqualTo] "",VendorTrained]]];
+
+~Delete the value of 'Vendor Capability Rating' if it would be empty~
+Output:=IIF[(ValidateAttributesExists[""Vendor Capability Rating""] AND VendorRating=""""),SetAttributeAction[""Vendor Capability Rating"",""Delete""],""false""];
+~Delete the value of 'Vendor Trained' if it would be empty~
+Output:=IIF[(ValidateAttributesExists[""Vendor Trained""] AND VendorTrained=""""),SetAttributeAction[""Vendor Trained"",""Delete""],""false""];
+
+~Set the value of 'Vendor Capability Rating' if not empty or 0~
+Output:=IIF[(VendorRating<>"""" AND ValidateAttributesExists[""Vendor Capability Rating""]),SetAttributeValue[""Vendor Capability Rating"",VendorRating],""false""];
+~Set the value of 'Vendor Trained' if not empty or 0~
+Output:=IIF[(VendorTrained<>"""" AND ValidateAttributesExists[""Vendor Trained""]),SetAttributeValue[""Vendor Trained"",VendorTrained],""false""];"
